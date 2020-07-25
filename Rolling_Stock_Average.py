@@ -11,6 +11,7 @@ def ymd_to_dt(ymd_date):
     year, month, day = (int(x) for x in ymd_date.split('-'))    
     return datetime.date(year, month, day)
 
+
 def get_business_days_list(startdate, enddate):   
     nyse = mcal.get_calendar('NYSE')
     business_days = nyse.valid_days(start_date=startdate, end_date=enddate).strftime('%Y-%m-%d')
@@ -19,30 +20,24 @@ def get_business_days_list(startdate, enddate):
         date_list.append(business_days[date])  
     return date_list
 
+
 def market_closed(date, nyse):
     try:
         nyse.index(date)
         return False
     except: 
         return True
-
-def print_stock_stats(stock_data):
+ 
     
-    print('Stock Mean:', np.mean(stock_data))
-    print('Current Price:', stock_data[len(stock_data)-1])
-    print('Start Date Price:', stock_data[0])
-    print('Median Price', np.median(stock_data))
-    print('Stock Variance', stock_data.var())
-    print('Stock Standard Deviation', stock_data.std())
-    
-def get_rolled_back_start(start_date, period):   
+def get_rolled_back_start(start_date, period):
     
     delta = datetime.timedelta(days=(period * 2 + 5))
     nyse = get_business_days_list((ymd_to_dt(start_date) - delta).strftime('%Y-%m-%d'), start_date)
     new_start = nyse[len(nyse) - period:]
     
     return new_start[0]
-   
+
+
 def get_rolling_average(ticker, period, start_date, end_date):
 
     new_start_date = get_rolled_back_start(start_date, period)
@@ -53,8 +48,20 @@ def get_rolling_average(ticker, period, start_date, end_date):
 
     rolling_average = []
     for date in range(0, len(stock_data) - period):
-        rolling_average.append(abs(stock_data[date] + stock_data[date + period]) / 2)
+        rolling_average.append(average(stock_data, period, date))
+        
     return rolling_average
+
+def average(stock_data, period, date):
+    
+    sum_ = 0
+    
+    for iterate in range(0, period):
+        sum_ += stock_data[date + iterate]
+        
+    average = sum_ / period
+    
+    return average
 
 def convert_data(twentyday_avg, stock_data):
     copy1 = copy.copy(stock_data)
@@ -64,16 +71,17 @@ def convert_data(twentyday_avg, stock_data):
     
     return copy1
 
+
 def get_Stock_Data(ticker, startdate, enddate, period):  
     
     # Pull Stock Data
     stock_data = pd.DataFrame()
     stock_data = wb.DataReader(ticker, data_source="yahoo", start=startdate, end=enddate)['Adj Close']
-    print_stock_stats(stock_data)
     
     twentyday_avg = get_rolling_average(ticker, period, startdate, enddate)
     twentyday_avg = convert_data(twentyday_avg, stock_data)
     plot_graph(ticker, stock_data, twentyday_avg, period)
+
 
 def plot_graph(ticker, price_list, rolling_average, period):
     
@@ -91,4 +99,4 @@ def plot_graph(ticker, price_list, rolling_average, period):
     plt.show()
     
      
-get_Stock_Data('SPY', '2019-04-01', '2020-07-17', 20)
+get_Stock_Data('SPY', '2019-02-01', '2020-07-17', 5)
